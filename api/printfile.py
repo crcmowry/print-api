@@ -1,6 +1,6 @@
 # Defines a POST endpoint that prints a file
 from api import app
-from flask import request, redirect, render_template, jsonify
+from flask import request, redirect, render_template
 from subprocess import Popen, PIPE
 
 LP_EXTENSIONS = {'pdf', 'txt'}
@@ -11,22 +11,26 @@ ANDREW_ID_KEY = 'andrew_id'
 COPIES_KEY = 'copies'
 SIDES_KEY = 'sides'
 
-def response_print_error(request=None, err_description=None, code=400):
-    """ Returns a JSON response when printing a file fails. """
+def response_print_error(request=None, err_description="unknown err", code=400):
+    """ Redirects to error page when printing a file fails. """
     # Request not handled here currently
-    return jsonify(status_code=code, message=err_description)
+    return render_template("print_error.html", message=err_description), code
 
-def response_print_success(success_description=None):
-    """Returns a JSON response of a successful print."""
-    return jsonify(status_code=200, message=success_description)
+def response_print_success():
+    """ Redirects to successful print page. """
+    return render_template("print_success.html")
 
 def has_printable_file(request):
     """ Returns True if the request contains a printable file, False otherwise. """
     # Checks for existance of file, and if the file has a printable extension
-    file = request.files[FILE_KEY]
-    return file and \
-            '.' in file.filename and \
-            file.filename.rsplit('.', 1)[1] in LP_EXTENSIONS
+    try:
+        file = request.files[FILE_KEY]
+        result = file and \
+                '.' in file.filename and \
+                file.filename.rsplit('.', 1)[1] in LP_EXTENSIONS
+    except:
+        result = False
+    return result
 
 def has_andrew_id(request):
     """ Returns True if the request contains a plausible andrewID. Does not
@@ -37,7 +41,7 @@ def has_andrew_id(request):
 def has_copies(request):
     """ Returns True if the request contains a non-zero number of copies """
     try:
-        copies = int(request[COPIES_KEY])
+        copies = int(request.form[COPIES_KEY])
         result = copies > 0
     except:
         result = False
@@ -45,7 +49,7 @@ def has_copies(request):
 
 def has_sides(request):
     """ Returns True if the request contains a valid sidedness option. """
-    return request.form[SIDES_KEY] and
+    return request.form[SIDES_KEY] and \
             request.form[SIDES_KEY] in ["one-sided",
                                         "two-sided-long-edge",
                                         "two-sided-short-edge"]
@@ -58,7 +62,7 @@ def printfile():
     if not has_printable_file(request):
         return response_print_error(request,
             "Request does not contain a printable file. " +
-            "PDF and txt files under 25MB are supported.")
+            "PDF and .txt files under 25MB are supported.")
     if not has_andrew_id(request):
         return response_print_error(request, "Please submit a valid Andrew ID.")
     if not has_copies(request):
@@ -72,15 +76,12 @@ def printfile():
     copies = request.form[COPIES_KEY]
     sides = request.form[SIDES_KEY]
 
-    # TODO Improve logging mechanism
-    print("%s printed %s" % (andrew_id, file.filename))
-
     # Command line arguments for the lp command
     args = ["lp",
             "-U", andrew_id,
             "-t", file.filename,
             "-n", copies,
-            "-o", "sides=" + sides
+            "-o", "sides=" + sides,
             "-", # Force printing from stdin
             ]
 
@@ -88,7 +89,11 @@ def printfile():
     outs, errs = p.communicate(input=file.read())
     print("lp outs:", outs)
     print("lp errs:", errs)
-    return response_print_success("Successfully printed " + file.filename)
+
+    # TODO Improve logging mechanism
+    print("%s printed %s" % (andrew_id, file.filename))
+
+    return response_print_success()
 
 # Untested (NGINX will probably return first)
 @app.errorhandler(413)
