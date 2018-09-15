@@ -8,11 +8,11 @@
   <h3>Print @ Carnegie Mellon</h3>
   <form action="printfile" method=post enctype=multipart/form-data>
     <label for="andrew_id">Andrew ID</label>
-    <input type="text" name="andrew_id" id="andrew_id">
+    <input type="text" name="andrew_id" id="andrew_id" required>
 
     <label for="upload_file">Upload your file</label>
     <small>Supported files: .pdf and .txt under 25MB.</small>
-    <input type="file" name="file" id="upload_file">
+    <input type="file" name="file" id="upload_file" required>
 
     <label for="copies"># of Copies</label>
     <input name="copies" type="number" value="1" min="1" id="copies">
