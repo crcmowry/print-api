@@ -8,6 +8,7 @@ app.config["MAX_CONTENT_LENGTH"] = 25 * 1024 * 1024  # 25 Mb limit
 
 FILE_KEY = 'file'
 ANDREW_ID_KEY = 'andrew_id'
+COPIES_KEY = 'copies'
 SIDES_KEY = 'sides'
 
 def response_print_error(request=None, err_description=None, code=400):
@@ -33,6 +34,15 @@ def has_andrew_id(request):
     # TODO: Test the validity of the andrewID with the directory API!
     return request.form[ANDREW_ID_KEY] and len(request.form[ANDREW_ID_KEY]) > 0
 
+def has_copies(request):
+    """ Returns True if the request contains a non-zero number of copies """
+    try:
+        copies = int(request[COPIES_KEY])
+        result = copies > 0
+    except:
+        result = False
+    return result
+
 def has_sides(request):
     """ Returns True if the request contains a valid sidedness option. """
     return request.form[SIDES_KEY] and
@@ -42,20 +52,24 @@ def has_sides(request):
 
 @app.route('/printfile', methods=['POST'])
 def printfile():
-    """ Prints any PDF or txt file to a specified andrewID's print queue. """
-    # Ensure both a printable file, Andrew ID, and sides option were provided in the request
+    """ Prints any PDF or txt file to a specified andrewID's print queue.
+    Ensure a printable file, Andrew ID, copies, and sides option were
+    provided in the request """
     if not has_printable_file(request):
         return response_print_error(request,
             "Request does not contain a printable file. " +
             "PDF and txt files under 25MB are supported.")
     if not has_andrew_id(request):
         return response_print_error(request, "Please submit a valid Andrew ID.")
+    if not has_copies(request):
+        return response_print_error(request, "Please use a valid # of copies")
     if not has_sides(request):
         return response_print_error(request, "Please specify sidedness")
 
     # Retrieve file, andrew id, and sidedness from request
     file = request.files[FILE_KEY]
     andrew_id = request.form[ANDREW_ID_KEY]
+    copies = request.form[COPIES_KEY]
     sides = request.form[SIDES_KEY]
 
     # TODO Improve logging mechanism
@@ -65,6 +79,7 @@ def printfile():
     args = ["lp",
             "-U", andrew_id,
             "-t", file.filename,
+            "-n", copies,
             "-o", "sides=" + sides
             "-", # Force printing from stdin
             ]
