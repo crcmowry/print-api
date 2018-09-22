@@ -1,6 +1,7 @@
 # Landing page for the print API, explaining its endpoints
 from api import app
+from flask import render_template
 
-@app.route('/')
+@app.route('/', methods=['GET'])
 def index():
-    return 'ScottyLabs Print API'
+    return render_template("upload.html")

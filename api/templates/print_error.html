@@ -1,9 +1,10 @@
-<!DOCTYPE HTML>
-<head>
-    <title>Print API | Error</title>
-</head>
-<body>
-    <h1>Error Printing</h1>
-    <p>There was an error with your print job.</p>
-    <p>{{ description }}</p>
-</body>
+<!doctype html>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/normalize/8.0.0/normalize.min.css">
+<link rel="stylesheet" href="{{ url_for('static',filename='styles/milligram.css') }}">
+<title>Print API | Error</title>
+<div class="container">
+  <br>
+  <h3>Oops, an error occurred!</h3>
+  <p>{{ message}}</p>
+  <a class="button button-outline" href="/">Try Again</a>
+</div>
